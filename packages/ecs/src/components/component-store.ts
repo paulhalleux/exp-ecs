@@ -73,7 +73,7 @@ export class ComponentStore<T extends BaseComponent<ComponentKind, any>> {
    * @param updater - A function that takes the old component value and returns the new component value.
    * @throws Error if the component is not found for the entity.
    */
-  replace(entity: Entity, updater: ((oldValue: T) => T) | T): void {
+  replace(entity: Entity, updater: ((oldValue: Readonly<T>) => T) | T): void {
     const oldValue = this.safeGet(entity);
     this.map.set(
       entity,

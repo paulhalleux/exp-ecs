@@ -1,6 +1,6 @@
 /**
- * An Entity is represented by a unique numeric identifier.
- * This type alias enhances code readability by providing a clear semantic meaning
- * to the numeric IDs used throughout the system.
+ * An entity is simply a unique identifier.
+ *
+ * It represents an object within the ECS (Entity-Component-System) architecture.
  */
-export type Entity = number
+export type Entity = number;

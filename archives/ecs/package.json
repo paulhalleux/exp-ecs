@@ -1,5 +1,5 @@
 {
-  "name": "@ptl/ecs2",
+  "name": "@ptl/ecs",
   "type": "module",
   "version": "0.0.0",
   "main": "./dist/index.cjs",

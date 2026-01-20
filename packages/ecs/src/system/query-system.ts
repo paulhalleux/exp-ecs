@@ -1,4 +1,4 @@
-import { Query } from "../query";
+import { QueryComponent } from "../query";
 import { SystemBase } from "./index";
 import { Entity } from "../entity";
 import { Engine } from "../engine";
@@ -9,7 +9,7 @@ import { Engine } from "../engine";
 export type QuerySystem = SystemBase<
   "query",
   {
-    query: Query;
+    query: QueryComponent;
     onEnter?(engine: Engine, entity: Entity): void;
     onUpdate?(engine: Engine, entity: Entity): void;
     onExit?(engine: Engine, entity: Entity): void;
@@ -19,22 +19,20 @@ export type QuerySystem = SystemBase<
 /**
  * Creates a QuerySystem with the provided query and lifecycle functions.
  * @param query The entity query to match entities.
- * @param onEnter Function called when an entity enters the query.
- * @param onUpdate Function called when an entity is updated within the query.
- * @param onExit Function called when an entity exits the query.
+ * @param callbacks Lifecycle functions for entity events.
  * @returns A QuerySystem instance.
  */
 export const createQuerySystem = (
-  query: Query,
-  onEnter?: (engine: Engine, entity: Entity) => void,
-  onUpdate?: (engine: Engine, entity: Entity) => void,
-  onExit?: (engine: Engine, entity: Entity) => void,
+  query: QueryComponent,
+  callbacks: {
+    onEnter?: (engine: Engine, entity: Entity) => void;
+    onUpdate?: (engine: Engine, entity: Entity) => void;
+    onExit?: (engine: Engine, entity: Entity) => void;
+  } = {},
 ): QuerySystem => {
   return {
     __kind: "query",
     query,
-    onEnter,
-    onUpdate,
-    onExit,
+    ...callbacks,
   };
 };
