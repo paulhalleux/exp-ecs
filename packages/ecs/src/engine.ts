@@ -10,7 +10,7 @@ import {
 } from "./components";
 import { EventSystem } from "./system/event-system";
 import { QuerySystem } from "./system/query-system";
-import { QueryTracker } from "./query";
+import { QueryComponent, QueryTracker } from "./query";
 import { TickQuerySystem } from "./system/tick-query-system";
 
 export class Engine {
@@ -19,6 +19,8 @@ export class Engine {
   private readonly querySystems = new Map<QuerySystem, QueryTracker>();
   private readonly tickQuerySystems = new Map<TickQuerySystem, QueryTracker>();
   private systemsRemovalQueue: System[] = [];
+
+  private queryTrackers = new Map<string, QueryTracker>();
 
   private nextEntityId: Entity = 1;
   private readonly entitySet: Set<Entity> = new Set();
@@ -123,8 +125,7 @@ export class Engine {
     if (!store) {
       return undefined;
     }
-    const component = store.get(entity);
-    return component ? component.data : undefined;
+    return store.get(entity);
   }
 
   /**
@@ -231,6 +232,22 @@ export class Engine {
     componentStore.replace(entity, data);
 
     this.updateQueries(entity);
+  }
+
+  /**
+   * Retrieves the component store for a specific component type.
+   * @param type The component type to get the store for.
+   * @returns The component store for the specified component type.
+   */
+  getComponentStore<Kind extends ComponentKind, Data>(
+    type: ComponentType<Kind, Data>,
+  ): ComponentStore<BaseComponent<Kind, Data>> {
+    let store = this.componentStores.get(type.key);
+    if (!store) {
+      this.registerComponent(type);
+    }
+    store = this.componentStores.get(type.key)!;
+    return store;
   }
 
   /**
@@ -352,6 +369,30 @@ export class Engine {
     for (const [, tracker] of this.tickQuerySystems) {
       tracker.update(entity);
     }
+
+    for (const [, tracker] of this.queryTrackers) {
+      tracker.update(entity);
+    }
+  }
+
+  /**
+   * Retrieves a QueryTracker for the specified query.
+   * If a tracker for the query does not exist, it creates a new one.
+   * @param query The query component defining the criteria for the tracker.
+   * @returns The QueryTracker associated with the query.
+   */
+  getQueryTracker(query: QueryComponent): QueryTracker {
+    const key = JSON.stringify(query, (_, v) =>
+      typeof v === "symbol" ? v.toString() : v,
+    );
+
+    let tracker = this.queryTrackers.get(key);
+    if (!tracker) {
+      tracker = new QueryTracker(this, query);
+      this.queryTrackers.set(key, tracker);
+    }
+
+    return tracker;
   }
 
   // ------------------------------------------

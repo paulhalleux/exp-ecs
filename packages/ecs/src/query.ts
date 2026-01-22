@@ -66,8 +66,15 @@ export function matchQuery(
   return false;
 }
 
+export type QueryListener = {
+  onEnter?(entity: Entity): void;
+  onUpdate?(entity: Entity): void;
+  onExit?(entity: Entity): void;
+};
+
 export class QueryTracker {
   private readonly entities = new Set<Entity>();
+  private listeners = new Set<QueryListener>();
 
   constructor(
     private readonly engine: Engine,
@@ -84,15 +91,24 @@ export class QueryTracker {
 
     if (matches && !has) {
       this.entities.add(entity);
+      this.listeners.forEach((listener) => {
+        listener.onEnter?.(entity);
+      });
       return "enter";
     }
 
     if (!matches && has) {
       this.entities.delete(entity);
+      this.listeners.forEach((listener) => {
+        listener.onExit?.(entity);
+      });
       return "exit";
     }
 
     if (matches && has) {
+      this.listeners.forEach((listener) => {
+        listener.onUpdate?.(entity);
+      });
       return "update";
     }
 
@@ -105,6 +121,13 @@ export class QueryTracker {
 
   *all(): Iterable<Entity> {
     yield* this.entities;
+  }
+
+  subscribe(listener: QueryListener): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
 }
 

@@ -42,45 +42,12 @@
         "vite-plugin-dts": "^4.5.4",
       },
     },
-    "packages/ecs2": {
-      "name": "@ptl/ecs2",
-      "version": "0.0.0",
-      "devDependencies": {
-        "prettier": "^3.8.0",
-        "tsdown": "^0.7.3",
-        "typescript": "^5.2.2",
-      },
-    },
     "packages/react": {
       "name": "@ptl/react",
       "version": "0.0.0",
       "dependencies": {
         "@ptl/ecs": "^0.0.0",
         "@ptl/ecs-react": "^0.0.0",
-        "react": "^19.2.0",
-        "react-dom": "^19.2.0",
-      },
-      "devDependencies": {
-        "@eslint/js": "^9.39.1",
-        "@types/node": "^24.10.1",
-        "@types/react": "^19.2.5",
-        "@types/react-dom": "^19.2.3",
-        "@vitejs/plugin-react": "^5.1.1",
-        "eslint": "^9.39.1",
-        "eslint-plugin-react-hooks": "^7.0.1",
-        "eslint-plugin-react-refresh": "^0.4.24",
-        "globals": "^16.5.0",
-        "prettier": "^3.8.0",
-        "typescript": "~5.9.3",
-        "typescript-eslint": "^8.46.4",
-        "vite": "^7.2.4",
-      },
-    },
-    "packages/react2": {
-      "name": "@ptl/react2",
-      "version": "0.0.0",
-      "dependencies": {
-        "@ptl/ecs2": "^0.0.0",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
       },
@@ -426,11 +393,7 @@
 
     "@ptl/ecs-react": ["@ptl/ecs-react@workspace:packages/ecs-react"],
 
-    "@ptl/ecs2": ["@ptl/ecs2@workspace:packages/ecs2"],
-
     "@ptl/react": ["@ptl/react@workspace:packages/react"],
-
-    "@ptl/react2": ["@ptl/react2@workspace:packages/react2"],
 
     "@quansync/fs": ["@quansync/fs@1.0.0", "", { "dependencies": { "quansync": "^1.0.0" } }, "sha512-4TJ3DFtlf1L5LDMaM6CanJ/0lckGNtJcMjQ1NAV6zDmA0tEHKZtxNKin8EgPaVX1YzljbxckyT2tJrpQKAtngQ=="],
 

@@ -1,6 +1,8 @@
 import { Entity } from "../entity";
 import { BaseComponent, ComponentKind, ComponentLifetime } from "./index";
 
+type ComponentListener<T> = (value: T | undefined) => void;
+
 /**
  * A store for managing components associated with entities.
  *
@@ -8,6 +10,7 @@ import { BaseComponent, ComponentKind, ComponentLifetime } from "./index";
  */
 export class ComponentStore<T extends BaseComponent<ComponentKind, any>> {
   private readonly map = new Map<Entity, T>();
+  private listeners = new Map<Entity, Set<ComponentListener<T>>>();
 
   constructor(public readonly lifetime: ComponentLifetime) {}
 
@@ -55,6 +58,7 @@ export class ComponentStore<T extends BaseComponent<ComponentKind, any>> {
    */
   set(entity: Entity, value: T): void {
     this.map.set(entity, value);
+    this.notify(entity);
   }
 
   /**
@@ -81,6 +85,7 @@ export class ComponentStore<T extends BaseComponent<ComponentKind, any>> {
         ? (updater as (oldValue: T) => T)(oldValue)
         : updater,
     );
+    this.notify(entity);
   }
 
   /**
@@ -97,5 +102,32 @@ export class ComponentStore<T extends BaseComponent<ComponentKind, any>> {
    */
   clear(): void {
     this.map.clear();
+  }
+
+  /**
+   * Subscribes a listener to changes for the specified entity's component.
+   *
+   * @param entity - The entity to subscribe to.
+   * @param listener - The listener function to be called on changes.
+   * @returns A function to unsubscribe the listener.
+   */
+  subscribe(entity: Entity, listener: ComponentListener<T>): () => void {
+    let set = this.listeners.get(entity);
+    if (!set) {
+      set = new Set();
+      this.listeners.set(entity, set);
+    }
+
+    set.add(listener);
+    return () => set?.delete(listener);
+  }
+
+  /**
+   * Notifies all listeners subscribed to the specified entity's component.
+   *
+   * @param entity - The entity whose listeners are to be notified.
+   */
+  notify(entity: Entity): void {
+    this.listeners.get(entity)?.forEach((l) => l(this.get(entity)));
   }
 }
