@@ -4,7 +4,7 @@ import { Entity } from "../entity";
 import { BaseComponent, ComponentType } from "../components";
 
 /**
- * A system that performs actions on each tick of the engine.
+ * A system that performs actions on emitted events.
  */
 export type EventSystem<T extends ComponentType<"event", any>> = SystemBase<
   "event",
@@ -22,7 +22,7 @@ export type EventSystem<T extends ComponentType<"event", any>> = SystemBase<
 
 /**
  * Creates an EventSystem with the provided handle function.
- * @param componentType The component type that this event system will handle.
+ * @param componentType The component type (used as the event key) that this event system will handle.
  * @param handleFn The function to be called when an event is dispatched.
  * @returns An EventSystem instance.
  */

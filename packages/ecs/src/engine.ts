@@ -5,13 +5,13 @@ import {
   ComponentKind,
   ComponentStore,
   ComponentType,
-  isEventComponent,
   isEventComponentType,
 } from "./components";
 import { EventSystem } from "./system/event-system";
 import { QuerySystem } from "./system/query-system";
 import { QueryComponent, QueryTracker } from "./query";
 import { TickQuerySystem } from "./system/tick-query-system";
+import { EventBus } from "./event-bus";
 
 export class Engine {
   private systems: System[] = [];
@@ -27,6 +27,9 @@ export class Engine {
   private entitiesRemovalQueue: Entity[] = [];
 
   private readonly componentStores = new Map<symbol, ComponentStore<any>>();
+
+  // Transient event bus for the engine
+  private readonly eventBus = new EventBus();
 
   // ------------------------------------------
   // Entity Management
@@ -78,6 +81,11 @@ export class Engine {
   registerComponent<Kind extends ComponentKind, Data>(
     type: ComponentType<Kind, Data>,
   ): void {
+    // Don't register event component types as persistent stores; they are transient via EventBus
+    if (isEventComponentType(type)) {
+      return;
+    }
+
     if (this.componentStores.has(type.key)) {
       return;
     }
@@ -168,6 +176,19 @@ export class Engine {
     data?: Partial<Data>,
   ): void {
     this.assertEntity(entity);
+
+    // If the component is an event, emit it to the event bus instead of storing
+    if (isEventComponentType(type)) {
+      const component = type.create(data) as BaseComponent<"event", Data>;
+      type.validate?.(component as any);
+      // Use the component type key as the event key
+      this.eventBus.emit(type.key, entity, component as any);
+
+      // Update queries in case any query depends on event components (unlikely)
+      this.updateQueries(entity);
+      return;
+    }
+
     let store = this.componentStores.get(type.key);
     if (!store) {
       this.registerComponent(type);
@@ -177,12 +198,6 @@ export class Engine {
     const component = type.create(data);
     type.validate?.(component);
     store.set(entity, component);
-
-    // If the component is an event, dispatch it and remove it immediately
-    if (isEventComponentType(type) && isEventComponent(component)) {
-      this.dispatchEvent(entity, type, component);
-      this.remove(entity, type);
-    }
 
     this.updateQueries(entity);
   }
@@ -325,23 +340,18 @@ export class Engine {
   }
 
   /**
-   * Dispatches an event to all relevant event systems.
-   * @param entity The entity associated with the event.
-   * @param type The component type of the event.
-   * @param component The event component data.
+   * Dispatch all queued events from the event bus to the registered event systems.
    */
-  private dispatchEvent<Data>(
-    entity: Entity,
-    type: ComponentType<"event", Data>,
-    component: BaseComponent<"event", Data>,
-  ): void {
-    const eventSystems = this.eventSystems.get(type.key);
-    if (!eventSystems) {
-      return;
-    }
-
-    for (const system of eventSystems) {
-      system.handle(this, entity, component);
+  private dispatchQueuedEvents(): void {
+    const all = this.eventBus.drainAll();
+    for (const [key, list] of all.entries()) {
+      const systems = this.eventSystems.get(key);
+      if (!systems) continue;
+      for (const payload of list) {
+        for (const system of systems) {
+          system.handle(this, payload.entity, payload.data);
+        }
+      }
     }
   }
 
@@ -404,6 +414,9 @@ export class Engine {
    * @param deltaTime The time elapsed since the last update.
    */
   update(deltaTime: number): void {
+    // Dispatch transient events for this frame before running tick systems
+    this.dispatchQueuedEvents();
+
     const tickSystems = this.getSystemsByKind("tick");
     for (const system of tickSystems) {
       system.tick(this, deltaTime);
